@@ -1,25 +1,23 @@
-import logo from './logo.svg';
+
+import {Switch, Route} from 'react-router-dom'
+
+import DatosPersonales from './components/DatosPersonales';
+import Ddjj from './components/Ddjj';
+import SolicitudQr from './components/SolicitudQR';
+import DownloadQR from './components/DownloadQR';
 import './App.css';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+	return (
+		
+                  <Switch>
+                        <Route exact path="/" component={DatosPersonales}/>
+                        <Route exact path="/ddjj" component={Ddjj}/>
+                        <Route exact path="/solicitud" component={SolicitudQr}/>
+                        <Route exact path="/qr" component={DownloadQR}/>
+                  </Switch>
+            
+	);
 }
 
 export default App;
