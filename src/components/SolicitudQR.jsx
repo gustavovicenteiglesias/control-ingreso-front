@@ -5,6 +5,7 @@ import "./Formulario.css";
 import swal from 'sweetalert';
 
 import QR from "./DownloadQR";
+import { Redirect } from "react-router-dom";
 //import DownloadQr from "./DownloadQR";
 
 const URL_HOST="http://areco.gob.ar:9528"
@@ -36,32 +37,31 @@ const [hiddenActividad,setHiddenActividad]=useState(true)
 const [hiddenHorario,setHiddenHorario]=useState(true)
 const [hiddenSesion,setHiddenSesion]=useState(true);
 const [hiddenAula,setHiddenAula]=useState(true);
-const [isLoading, setLoading] = useState(false);
-const [solicitud,Setsolicitud]=useState();
-const [idsolicitud,Setidsolicitud]=useState();
-const [redirect,setRedirect]=useState(false);
 
+const [solicitud,Setsolicitud]=useState();
+
+const [redirect,setRedirect]=useState(false);
+const [isSubmitting,setIsSubmitting]=useState(false)
 useEffect(() => {
     
       axios.get(URL_HOST+"/api/sede/all")
     .then((resp)=>{
         console.log(resp.data.data)
-        setSede(resp.data.data)
-        
-      })
+        setSede(resp.data.data)})
       .catch((error)=>{console.log(error)})
 }, [])
     const handleSede=(e)=>{
         setSedeSeleccion(e.target.value)
         console.log("sede",e.target.value)
+        axios.get(URL_HOST+"/api/sede/find/"+e.target.value)
+        .then((resp)=>{localStorage.setItem("sede",resp.data.data.nombre)})
+        .catch((error)=>{console.log(error)})
         setHiddenPropuesta(true);setHiddenActividad(true);setHiddenHorario(true);setHiddenSesion(true);setHiddenAula(true)
         setDependecia([]);setPropuesta([]);setActividad([]);sethorario([]);setSesion([]);setAula();
         axios.get(URL_HOST+"/api/dependencia/all")
         .then((resp)=>{
             console.log(resp.data.data)
-            setDependecia(resp.data.data)
-            
-        })
+            setDependecia(resp.data.data)})
         .catch((error)=>{console.log(error)})
     }
     const handleDepencia=(e)=>{
@@ -81,7 +81,7 @@ useEffect(() => {
         console.log(e.target.value);
         axios.get(URL_HOST+"/api/actividad/find/propuesta/"+id_propuesta)
         .then((resp)=>{
-            console.log(resp.data.data)
+            console.log("Actividad",resp.data.data )
             setActividad(resp.data.data)
             setHiddenActividad(false)
             setHiddenHorario(true)
@@ -93,6 +93,13 @@ useEffect(() => {
      }
      const handleActividad=(e)=>{
         setActividadId(e.target.value);
+        axios.get(URL_HOST+"/api/actividad/find/"+e.target.value)
+        .then((resp)=>{
+            localStorage.setItem("actividad", resp.data.data.nombreActividad)
+            console.log("NombreActividad",resp.data.data.nombreActividad)
+            
+        })
+        
         console.log(e.target.value);
         axios.get(URL_HOST+"/api/horario/find/sede_actrividad/"+e.target.value+"/"+sedeSeleccion)
         .then((resp)=>{
@@ -128,24 +135,35 @@ useEffect(() => {
         console.log('SesionFechaII',session[0].fecha.slice(0,10))
         
          console.log('sesionid',e.target.value)
+         axios.get(URL_HOST+"/api/sesionpresencial/find/"+id)
+         .then((resp)=>{localStorage.setItem("fecha",resp.data.data.fecha)})
          setSesionId(id)
          setSesionFecha(session[0].fecha.slice(0,10))
          axios.get(URL_HOST+"/api/aula/find/sesion/"+e.target.value)
+         .catch((error)=>{console.log(error)})
          .then((resp)=>{
-             console.log(resp.data.data);
+             console.log("Aula",resp.data.data);
              setAula(resp.data.data);
+             localStorage.setItem("aula", resp.data.data.nombre)
              setHiddenAula(false);
-      
+             axios.get(URL_HOST+"/api/edificio/edificioByAula/"+resp.data.data.idAula)
+                .then((resp)=>{
+                    console.log("edificio",resp.data.data)
+                    localStorage.setItem("edificioNombre",resp.data.data.nombre)
+                    localStorage.setItem("edificioDireccion",resp.data.data.direccion)
+                })
+                .catch((error)=>{console.log(error)})
            })
            .catch((error)=>{console.log(error)})
      }
      console.log("ddjj",localStorage.getItem("ddjj"))
      const handleSutmit=(e)=>{
-        
+        setIsSubmitting(true);
         const id_ddjj=localStorage.getItem("ddjj");
 
          axios.post(URL_HOST+"/api/solicitud/create-ddjj-actividad-aula-horario/"+id_ddjj+'/'+actividadId+'/'+aula.idAula+'/'+horarioId+'/?fecha='+sesionFecha,{})
          .then((resp)=>{
+             setIsSubmitting(false);
              console.log("Solicitus nro",resp.data.data)
              if(resp.data.success){
                 
@@ -166,18 +184,23 @@ useEffect(() => {
                  swal("","Aula sin capacidad","error")
              }
             })
-         .catch((error)=>{console.log(error)})
+         .catch((error)=>{
+             console.log(error);
+             setIsSubmitting(false);
+            })
          e.preventDefault();
      }
 
      if(redirect  ){
         return <QR codeqr={solicitud}  />
+     }else if(localStorage.getItem("ddjj")===null){
+        return <Redirect to="/"/>
      }else{
         return(
             <>
            
-            <Form className="seccion-container mt-3 mb-3" onSubmit={handleSutmit}>
-                <h2 className="subtitulo">Solicitar QR</h2>
+            <Form className="seccion-container mt-3 mb-3 mx-3" onSubmit={handleSutmit}>
+                <h2 className="subtitulo">Permiso para acceso presencial </h2>
                 <Form.Group controlId="sede">
                     <Form.Label className="label-preguntas mt-3">Selecciona Sede</Form.Label>
                     <Form.Control size="sm" as="select" onChange={handleSede}>
@@ -268,7 +291,15 @@ useEffect(() => {
             <div hidden={hiddenAula}>
                 <p  className="subtitulo mt-3">Aula:{aula===undefined?null:aula.nombre}</p>
                 
-                <Button className=" mt-3" variant="primary" type="submit" size="lg" block >Confirmar</Button>
+                <Button 
+                className=" mt-3" 
+                variant="primary" 
+                type="submit" 
+                size="lg" 
+                disabled={isSubmitting}
+                block >
+                    {isSubmitting ? 'Confirmando' : 'Confirmar'}
+                </Button>
     
             </div>
             

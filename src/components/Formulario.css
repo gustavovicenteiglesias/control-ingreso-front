@@ -1,10 +1,12 @@
  
   :root {
       /* cambiando estos colores cambia toda la pagina*/
-      --color-fondo: #18363d;
-      --color-cuadrado:#265661;
-      --color-textos: white;
-  
+      --color-btnfocus:#b19700;
+      --color-btn:#00464f;
+      --color-fondo: #ffffff;
+      --color-cuadrado:#ffffff;
+      --color-textos: #333333;
+      --color-titulos:#555559;
       --color-claro: black;/*rgba(233, 191, 124, 0.9)*/;
       --color-medio:   var(--color-cuadrado);
       --color-oscurox2:  var(--color-fondo)/*#c79144*/;
@@ -16,9 +18,22 @@
       --background-gradient: var(--color-oscurox2);/*linear-gradient(to bottom,var(--color-claro) 0%, var(--color-oscurox2) 100%);*/
       --sombra-textos: rgba(0,0,0,0);
   }
-  
+  .btn-primary {
+    color: #fff;
+    background-color: var(--color-btn);
+    border-color:var(--color-btn);
+
+}
+.btn.btn-primary:active,
+.btn.btn-primary:hover,
+.btn.btn-primary:focus {
+    color: #fff;
+    background-color: var(--color-btnfocus)!important;
+    border-color:var(--color-btnfocus)!important;
+}
+
   body {
-      font-family: 'Roboto', sans-serif;
+      font-family: 'Helvetica Neue', sans-serif;
       color: black;
       background: var(--background-gradient);
   }
@@ -30,14 +45,16 @@
   
   h3,h4,h5 {
       margin-bottom: 1.5rem;
-      text-shadow: var(--sombra-textos);
+     
       color: var(--color-texto)
   }
   
   .subtitulo{
-      color: aliceblue;
+      font-weight: bold;
+  
+    color: var(--color-titulos);
   }
-  p,label {
+  label {
       color:var(--color-texto)
   }
   .fondo-container {
@@ -63,10 +80,10 @@
   }
   
   .seccion-container {
-      box-shadow: (var(--sombra-container));
+      
       background-color: var(--color-medio);
-      box-shadow: var(--sombra-container);
-      border-radius: 10px;
+      
+   
       padding: 1rem 1.5rem 1rem 1.5rem;
   }
   
@@ -89,12 +106,8 @@
       h3 {
           text-align: center;
       }
-      p,
-      .label-datos-personales {
-          font-size: 1.12em;
-          font-weight: bold;
-          margin-top: 1rem;
-      }
+      
+     
       .input-datos-personales {
           width: 100%;
       }
@@ -105,7 +118,7 @@
       h3 {
           text-align: center;
       }
-      p,
+    
       .label-datos-personales {
           font-size: 1.12em;
           font-weight: bold;

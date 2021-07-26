@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { Form,Button } from "react-bootstrap";
 import "./Formulario.css";
 import axios from 'axios';
-import { Link, Redirect } from "react-router-dom";
+import { Redirect } from "react-router-dom";
 const URL_HOST="http://areco.gob.ar:9528"
+localStorage.clear()
 const DatosPersonales = () => {
   var persona={};
  
@@ -14,30 +15,51 @@ const DatosPersonales = () => {
   const [nombre,setNombre]=useState();
   const [telefono,setTelefono]=useState();
   const [redirect,setRedirect]=useState(false);
-
- 
+  const [isSubmitting,setIsSubmitting]=useState(false)
+  const [hidden,setHidden]=useState(true)
+  const [hiddenNombre,setHiddennombre]=useState(true)
+  const [disabled,setDisabled]=useState(false)
+  const [redirectNombre,setRedirectNombre]=useState(false);
  const handleChangeDni=(e)=>{
+  setHiddennombre(true)
+  setHidden(true)
+   let  ex_regular_dni = /^\d{8}(?:[-\s]\d{4})?$/;
+   let dniaceptado=e.target.value
+   if(dniaceptado.match(ex_regular_dni)){
+     console.log("aceptado");
+     const dnis=e.target.value
+     axios.get(URL_HOST+"/api/persona/find/dni/"+dnis)
+     .then((res)=>{
+       console.log(res.data)
+       if(res.data.success){
+         setIdPersona(res.data.data.idPersona);
+         setNombre(res.data.data.nombre);
+         setTelefono(res.data.data.telefono);
+         setCorreoElectronico(res.data.data.correoElectronico)
+         setDni(res.data.data.dni)
+         setDireccion(res.data.data.direccion)
+         setHiddennombre(false)
+         if(res.data.tieneDdjj){
+           localStorage.setItem("ddjj",res.data.ddjj.idDdjj)
+         }
+        
+       }else {
+         setDni( e.target.value)
+         setIdPersona(null);
+         setNombre("");
+         setTelefono("");
+         setCorreoElectronico("")
+         setDireccion("")
+         setHiddennombre(false)
+         setHidden(false)
+       }
+     }) 
+
+    }
+   
+  
       console.log(e.target.value);
-    const dnis=e.target.value
-      axios.get(URL_HOST+"/api/persona/find/dni/"+dnis)
-      .then((res)=>{
-        if(res.data.success){
-          setIdPersona(res.data.data.idPersona);
-          setNombre(res.data.data.nombre);
-          setTelefono(res.data.data.telefono);
-          setCorreoElectronico(res.data.data.correoElectronico)
-          setDni(res.data.data.dni)
-          setDireccion(res.data.data.direccion)
-         
-        }else {
-          setDni( e.target.value)
-          setIdPersona(null);
-          setNombre("");
-          setTelefono("");
-          setCorreoElectronico("")
-          setDireccion("")
-        }
-      }) 
+    
      }
      const handleNombre=(event)=>{setNombre(event.target.value)};
      const handleTelefono=(event)=>{setTelefono(event.target.value)};
@@ -46,6 +68,7 @@ const DatosPersonales = () => {
       
 
       const handleSubmit=(e)=>{
+        setIsSubmitting(true)
         e.preventDefault();
         if (!idPersona) {
          persona={
@@ -63,16 +86,29 @@ const DatosPersonales = () => {
             localStorage.setItem("id_persona", resp.data.data)
             localStorage.setItem("nombre", nombre)
             console.log("id_persona",localStorage.getItem("id_persona"))
+            setRedirect(true)
+            setIsSubmitting(true)
           })
-          .catch((error)=>{console.log(error)})
+          .catch((error)=>{
+            console.log(error)
+            setIsSubmitting(true)
+          })
           
-          setRedirect(true)
+          
           
         } else {
           localStorage.setItem("id_persona", idPersona)
           localStorage.setItem("nombre", nombre)
           console.log(localStorage.getItem("id_persona"))
-          setRedirect(true)
+          if(localStorage.getItem("ddjj")!==null){
+            //si tiene ddjj vigente va a solicitud
+            setRedirectNombre(true)
+            setIsSubmitting(true)
+          }else{
+            setRedirect(true)
+            setIsSubmitting(true)
+          }
+         
         }
        
       } 
@@ -82,20 +118,25 @@ const DatosPersonales = () => {
            
           if (redirect) {
             return <Redirect to="/ddjj"/>
-          }else{
+          }else if(redirectNombre){
+            return <Redirect to="/solicitud"/>
+          }
+          else{
             return(
-              <Form className="seccion-container mt-3 mb-3" onSubmit={handleSubmit}>
-                  <h2>Datos Personales</h2>
+              <Form className="seccion-container mt-3 mb-3 mx-3" onSubmit={handleSubmit}>
+                  <h2 className="subtitulo">Datos Personales</h2>
             <Form.Group controlId="dni">
-              <Form.Label className="label-preguntas mt-3">Ingrese DNI </Form.Label>
-              <Form.Control type="text" placeholder="Ingrese DNI" onChange={handleChangeDni}  />
+              <Form.Label className="label-preguntas mt-3">Ingrese DNI (si tu dni es menor a 10 millones agrega un 0 adelante ) </Form.Label>
+              <Form.Control disabled={disabled} type="text" placeholder="11222333" onChange={handleChangeDni}  />
              
             </Form.Group>
-            
+            <div hidden={hiddenNombre}>
             <Form.Group controlId="nombreyapellido">
               <Form.Label>Nombre y Apellido</Form.Label>
               <Form.Control required type="text" placeholder="Nombre y Apellido" onChange={handleNombre} value={nombre}/>
             </Form.Group>
+            </div>
+            <div hidden={hidden}>
             <Form.Group controlId="direccion">
               <Form.Label>Direccion</Form.Label>
               <Form.Control  required type="text" placeholder="Direccion" onChange={handleDireccion}  value={direccion}/>
@@ -108,7 +149,12 @@ const DatosPersonales = () => {
               <Form.Label>Correo Electronico</Form.Label>
               <Form.Control required type="email" placeholder="Correo Electronico" onChange={handleCorreoElectronico} value={correoElectronico}/>
             </Form.Group>
-            <Button variant="primary" type="submit" className="mt-2" block>Confirmar</Button>
+            </div>
+            <div hidden={hiddenNombre}>
+            <Button variant="primary" type="submit" className="mt-2" block disabled={isSubmitting}>
+              {isSubmitting ? 'Enviando' : 'Confirmar'}
+            </Button>
+           </div>
           </Form>
          
               )
